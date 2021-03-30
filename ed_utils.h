@@ -21,27 +21,26 @@ concept hex_convertible = requires {
     requires std::is_arithmetic_v<T> || std::is_enum_v<T> || std::is_pod_v<T> || std::is_trivial_v<T>;
 };
 
-///////////////////////////////////////////
 /// добавление убирания разделителя из формируемой посылки
 struct SkipSemicolon {
 };
 
-///////////////////////////////////////////
 /// добавление разделителя в формируемую посылку
 struct Semicolon {
 };
 
-///////////////////////////////////////////
 /// обёртка над std::span для удобства хранения указателя и размена куска из буфера данных
 struct Span {
     using span = std::span<char>;
     span data;
 
     Span(span s) noexcept
-        : data{s} { }
+        : data{s} {
+    }
 
     Span(char* ptr, size_t size) noexcept
-        : data{ptr, size} { }
+        : data{ptr, size} {
+    }
 
     Span mid(size_t pos, size_t len = std::dynamic_extent) noexcept {
         return data.subspan(pos, len);
@@ -56,7 +55,6 @@ struct Span {
         return data.size();
     }
 
-    ///////////////////////////////////////////
     /// преобразование строки в целочисленный тип "Т"
     template <class T>
     int to(bool* ok = nullptr) const noexcept
@@ -81,7 +79,6 @@ struct Span {
     }
 };
 
-///////////////////////////////////////////
 /// обёртка для преобразования значения типа "Т" из в Hex формат
 struct ToHex {
     const QByteArray hex;
@@ -115,7 +112,6 @@ struct ToHex {
     }
 };
 
-///////////////////////////////////////////
 /// обёртка для получения значения типа "Т" из Hex формата
 template <typename T>
 struct FromHex {
@@ -139,7 +135,6 @@ struct FromHex {
 template <typename T>
 FromHex(T&) -> FromHex<T>; // template deduction guide
 
-///////////////////////////////////////////
 /// обёртка для получения знвчения типа "Т" из строки
 template <typename T>
 struct FromStr {
@@ -163,7 +158,6 @@ struct FromStr {
 template <typename T>
 FromStr(T&) -> FromStr<T>; // template deduction guide
 
-///////////////////////////////////////////
 /// Формирование посылкм из данных переданных в конструктор
 struct Parcel {
     QByteArray data;

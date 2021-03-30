@@ -37,7 +37,6 @@ public:
     virtual DeviceType type() const = 0;
     bool ping(const QString& portName = {}, int baud = 9600, int addr = 0) override;
 
-
     DeviceType getType(int addr);
 
     bool success();
@@ -50,11 +49,17 @@ public:
     bool setAddress(uint8_t address);
     bool setBaudRate(Baud baudRate);
 
-    /* FILE */
+    /// Открытие файла
     bool fileOpen();
+
+    /// Закрытие файла
     bool fileClose();
+
+    /// Установка позиции в файле
     bool fileSeek(uint16_t offset = 0, Seek seek = Seek::Set);
 
+    /// Чтение из файла N байт равных сумме размеров передаваемых типов с последующим преобразованием
+    /// из НЕХ формата
     template <typename... Ts>
     bool fileRead(Ts&... vals) {
         PortOpener po(policy == PortPolicy::CloseAfterRaad ? this : nullptr);
@@ -63,6 +68,7 @@ public:
         return success;
     }
 
+    /// Запись в файл с преобразованием в НЕХ формат
     template <typename... Ts>
     bool fileWrite(Ts&&... data) {
         PortOpener po(policy == PortPolicy::CloseAfterRaad ? this : nullptr);
@@ -74,7 +80,7 @@ public:
     bool fileChMod();
     bool fileRemove();
 
-    // HEX
+    /// Запись в устройство с преобразованием в НЕХ формат
     template <auto... Cmds, typename... Ts>
     inline int writeHex(Ts&&... vars) requires(is_command<decltype(Cmds)>&&... && true) {
         PortOpener po(policy == PortPolicy::CloseAfterRaad ? this : nullptr);
@@ -84,6 +90,7 @@ public:
         return -1;
     }
 
+    /// Чтение из устройства с преобразованием из НЕХ формата
     template <auto... Cmds, typename... Ret>
     inline bool readHex(Ret&... ret) requires(is_command<decltype(Cmds)>&&... && true) {
         constexpr size_t packSize = (sizeof(Ret) + ... + 0);
@@ -100,7 +107,7 @@ public:
         return false;
     }
 
-    // STRING
+    /// Запись в устройство с преобразованием в строчный формат
     template <auto... Cmds, typename... Ts>
     inline int write(Ts&&... vars) requires(is_command<decltype(Cmds)>&&... && true) {
         PortOpener po(policy == PortPolicy::CloseAfterRaad ? this : nullptr);
@@ -110,6 +117,7 @@ public:
         return -1;
     }
 
+    /// Чтение из устройства с преобразованием из строчного формата
     template <auto... Cmds, typename... Ret>
     inline bool read(Ret&... ret) requires(is_command<decltype(Cmds)>&&... && true) {
         constexpr size_t cmdsSize = sizeof...(Cmds);
@@ -127,7 +135,7 @@ public:
         return false;
     }
 
-public:
+    /// Формирование посылки для отправки в устройство
     template <typename... Ts>
     Parcel& makeParcel(Ts&&... args) {
         parcel = Parcel(std::forward<Ts>(args)...);
@@ -135,6 +143,7 @@ public:
         return parcel;
     }
 
+    /// преобразование из НЕХ формата
     template <typename T>
     auto fromHex(size_t index, bool* ok = nullptr) requires hex_convertible<T> {
         if(index >= m_data.size())
@@ -142,6 +151,7 @@ public:
         return fromHex<T>(m_data[index], ok);
     }
 
+    /// преобразование из НЕХ формата
     template <typename T>
     auto fromHex(const QByteArray& data, bool* ok = nullptr) requires hex_convertible<T> {
         auto d = QByteArray::fromHex(data);

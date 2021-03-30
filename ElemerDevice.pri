@@ -1,6 +1,6 @@
 QT += core serialport
 
-include(../../CommonInterfaces/CommonInterfaces.pri)
+include(../CommonInterfaces/CommonInterfaces.pri)
 
 HEADERS += \
     $$PWD/ed_common_types.h \
