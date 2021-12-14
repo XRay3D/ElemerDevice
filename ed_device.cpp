@@ -29,9 +29,9 @@ Device::~Device()
 bool Device::ping(const QString& portName, int baud, int addr)
 {
     QMutexLocker locker(&m_mutex);
-    m_connected = true;
+    connected_ = true;
 #ifdef EL_EMU
-    return m_connected;
+    return connected_;
 #endif
 
     m_semaphore.acquire(m_semaphore.available());
@@ -60,9 +60,9 @@ bool Device::ping(const QString& portName, int baud, int addr)
             }
             break;
         }
-        return m_connected;
+        return connected_;
     } while (0);
-    return m_connected = false;
+    return connected_ = false;
 }
 
 DeviceType Device::getType(int addr)
@@ -116,7 +116,7 @@ bool Device::checkParcel()
 
 bool Device::wait(int timeout)
 {
-    if (m_connected && m_semaphore.tryAcquire(1, timeout)) {
+    if (connected_ && m_semaphore.tryAcquire(1, timeout)) {
         if (checkParcel())
             return true;
         else

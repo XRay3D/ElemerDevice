@@ -82,8 +82,8 @@ PortOpener::PortOpener(Device* ad)
     if (!pAsciiDevice)
         return;
     emit pAsciiDevice->open(QIODevice::ReadWrite);
-    pAsciiDevice->m_connected = pAsciiDevice->m_semaphore.tryAcquire(1, 1000); // ждём открытия порта
-    if (pAsciiDevice->m_connected) {
+    pAsciiDevice->connected_ = pAsciiDevice->m_semaphore.tryAcquire(1, 1000); // ждём открытия порта
+    if (pAsciiDevice->connected_) {
         pAsciiDevice->m_port->setDataTerminalReady(pAsciiDevice->dtr == DTR::On);
         pAsciiDevice->m_port->setRequestToSend(pAsciiDevice->dts == DTS::On);
         pAsciiDevice->m_portThread.msleep(50);
@@ -92,7 +92,7 @@ PortOpener::PortOpener(Device* ad)
 
 PortOpener::~PortOpener()
 {
-    if (pAsciiDevice && pAsciiDevice->m_connected) {
+    if (pAsciiDevice && pAsciiDevice->connected_) {
         emit pAsciiDevice->close();
         pAsciiDevice->m_semaphore.tryAcquire(1, 1000); // ждём закрытия порта
     }
