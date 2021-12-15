@@ -57,7 +57,7 @@ struct Span {
 
     /// преобразование строки в целочисленный тип "Т"
     template <class T>
-    int to(bool* ok = nullptr) const noexcept
+    auto to(bool* ok = nullptr) const noexcept
         requires(std::is_integral_v<std::decay_t<T>> || std::is_enum_v<std::decay_t<T>>) {
         T result{};
         auto [ptr, errCode] = std::from_chars(data.data(), data.data() + data.size(), result /*, 10*/);
@@ -69,7 +69,7 @@ struct Span {
     ///////////////////////////////////////////
     /// преобразование строки в тип "Т" с плавающей точкой
     template <class T>
-    int to(bool* ok = nullptr) const noexcept
+    auto to(bool* ok = nullptr) const noexcept
         requires std::is_floating_point_v<std::decay_t<T>> {
         T result{};
         auto [ptr, errCode] = std::from_chars(data.data(), data.data() + data.size(), result /*, std::chars_format::general*/);
