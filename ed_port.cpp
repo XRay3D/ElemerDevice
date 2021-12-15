@@ -50,7 +50,7 @@ void Port::Write(const Parcel& data)
         return;
 #ifdef EL_LOG
     time.start();
-    qDebug() << "Write" << data << write(data) << time;
+    qDebug() << "    Write" << data << write(data) << time;
 #else
     write(data);
 #endif
@@ -63,7 +63,7 @@ void Port::Read()
     if (int index = m_answerData.indexOf('\r'); ++index > 0) {
         m_asciiDevice->m_answerData = m_answerData.mid(0, index);
 #ifdef EL_LOG
-        qDebug() << "Read" << m_asciiDevice->m_answerData << m_asciiDevice->m_answerData.size() << time.elapsed() << "ms";
+        qDebug() << "    Read" << m_asciiDevice->m_answerData << m_asciiDevice->m_answerData.size() << time.elapsed() << "ms";
 #endif
         m_answerData.remove(0, index);
         m_asciiDevice->m_semaphore.release();
