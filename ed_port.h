@@ -2,11 +2,59 @@
 
 #include <QMutex>
 #include <QSerialPort>
-#ifdef EL_LOG
-#include <QTime>
-#endif
+#include <chrono>
+#include <format>
 
 namespace Elemer {
+
+namespace chrono = std::chrono;
+
+struct Timer {
+
+#ifdef __gnu_linux__
+    chrono::time_point<chrono::system_clock, chrono::nanoseconds> t1;
+#else
+    chrono::time_point<chrono::steady_clock> t1;
+#endif
+    chrono::duration<double, std::milli> duration;
+    //    static inline std::map<const char*, double> avg {};
+    //    static inline std::map<const char*, size_t> ctr {};
+    std::string_view sv;
+    Timer(std::string_view sv = {})
+        : t1 { chrono::high_resolution_clock::now() }
+        , sv { sv }
+    {
+        //        avg = fl ? avg : double {};
+        //        ctr = fl ? ctr : int {};
+    }
+
+    ~Timer()
+    {
+        stop();
+        qDebug("time (%s) %f ms", sv.data(), duration.count());
+    }
+
+    void start(std::string_view sv_ = {}) { t1 = chrono::high_resolution_clock::now(), sv = sv_; }
+    void stop()
+    {
+        duration = { chrono::high_resolution_clock::now() - t1 };
+        //    avg[string_view.data()] += ms_double.count();
+        //    qDebug() << "time (" << string_view.data() << ")" << (avg[string_view.data()] / ++ctr[string_view.data()]) << "us";
+    }
+
+    auto str()
+    {
+        std::stringstream ss;
+        ss << chrono::hh_mm_ss { chrono::duration_cast<chrono::milliseconds>(t1.time_since_epoch()) }; //std::put_time(t1, "%T");
+        return ss.str();
+    }
+    auto stp()
+    {
+        std::stringstream ss;
+        ss << chrono::hh_mm_ss { chrono::duration_cast<chrono::milliseconds>(duration) }; //std::put_time(t1, "%T");
+        return ss.str();
+    }
+};
 
 class Device;
 struct Parcel;
@@ -29,19 +77,20 @@ private:
 
     QByteArray m_answerData;
     QMutex m_mutex;
-    Device* m_asciiDevice;
+    Device* device;
     int forceReadTimerId {};
 #ifdef EL_LOG
-    QTime time;
+    Timer timer;
 #endif
 
     // QObject interface
 protected:
-    void timerEvent(QTimerEvent* event) override;
+    void
+    timerEvent(QTimerEvent* event) override;
 };
 
 class PortOpener { // RAII
-    Device* const pAsciiDevice;
+    Device* const pDevice;
 
 public:
     explicit PortOpener(Device* ad);

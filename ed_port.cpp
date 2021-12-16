@@ -50,8 +50,8 @@ void Port::Write(const Parcel& data)
     if (!isOpen())
         return;
 #ifdef EL_LOG
-    time.start();
-    qDebug() << "    Write" << data << write(data) << time;
+    timer.start();
+    qDebug("    Wr %3dsz %s %s", write(data), timer.str().data(), data.data.data());
 #else
     write(data);
 #endif
@@ -62,12 +62,13 @@ void Port::Read()
     QMutexLocker locker(&m_mutex);
     m_answerData.append(readAll());
     if (int index = m_answerData.indexOf('\r'); ++index > 0) {
-        m_asciiDevice->m_answerData = m_answerData.mid(0, index);
+        device->rcData_ = m_answerData.mid(0, index);
 #ifdef EL_LOG
-        qDebug() << "    Read" << m_asciiDevice->m_answerData << m_asciiDevice->m_answerData.size() << time.elapsed() << "ms";
+        timer.stop();
+        qDebug("    Rd %3dsz %s %s", device->rcData_.size(), timer.stp().data(), device->rcData_.data());
 #endif
         m_answerData.remove(0, index);
-        m_asciiDevice->m_semaphore.release();
+        device->semaphore_.release();
     }
 }
 
