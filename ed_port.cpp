@@ -3,11 +3,12 @@
 #include "ed_utils.h"
 
 #include <qcoreevent.h>
+#include <ratio>
 
 namespace Elemer {
 
 Port::Port(Device* asciiDevice)
-    : m_asciiDevice(asciiDevice)
+    : device(asciiDevice)
 {
     setBaudRate(Baud9600);
     setParity(NoParity);
@@ -27,7 +28,7 @@ void Port::Open(int mode)
 {
     if (!open(static_cast<OpenMode>(mode)))
         emit message(errorString());
-    m_asciiDevice->m_semaphore.release();
+    device->semaphore_.release();
 #ifdef FORCE_READ
     if (isOpen())
         forceReadTimerId = startTimer(10ms);
@@ -37,7 +38,7 @@ void Port::Open(int mode)
 void Port::Close()
 {
     close();
-    m_asciiDevice->m_semaphore.release();
+    device->semaphore_.release();
 #ifdef FORCE_READ
     if (forceReadTimerId)
         killTimer(forceReadTimerId), forceReadTimerId = 0;
@@ -77,24 +78,24 @@ void Port::timerEvent(QTimerEvent* event)
 }
 
 PortOpener::PortOpener(Device* ad)
-    : pAsciiDevice(ad)
+    : pDevice(ad)
 {
-    if (!pAsciiDevice)
+    if (!pDevice)
         return;
-    emit pAsciiDevice->open(QIODevice::ReadWrite);
-    pAsciiDevice->connected_ = pAsciiDevice->m_semaphore.tryAcquire(1, 1000); // ждём открытия порта
-    if (pAsciiDevice->connected_) {
-        pAsciiDevice->m_port->setDataTerminalReady(pAsciiDevice->dtr == DTR::On);
-        pAsciiDevice->m_port->setRequestToSend(pAsciiDevice->dts == DTS::On);
-        pAsciiDevice->m_portThread.msleep(50);
+    emit pDevice->open(QIODevice::ReadWrite);
+    pDevice->connected_ = pDevice->semaphore_.tryAcquire(1, 1000); // ждём открытия порта
+    if (pDevice->connected_) {
+        pDevice->port_->setDataTerminalReady(pDevice->dtr == DTR::On);
+        pDevice->port_->setRequestToSend(pDevice->dts == DTS::On);
+        pDevice->portThread_.msleep(50);
     }
 }
 
 PortOpener::~PortOpener()
 {
-    if (pAsciiDevice && pAsciiDevice->connected_) {
-        emit pAsciiDevice->close();
-        pAsciiDevice->m_semaphore.tryAcquire(1, 1000); // ждём закрытия порта
+    if (pDevice && pDevice->connected_) {
+        emit pDevice->close();
+        pDevice->semaphore_.tryAcquire(1, 1000); // ждём закрытия порта
     }
 }
 

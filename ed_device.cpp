@@ -6,24 +6,24 @@ int parcelId = qRegisterMetaType<Parcel>("Parcel");
 
 Device::Device(QObject* parent, DTR dtr, DTS dts, PortPolicy policy)
     : QObject(parent)
-    , m_port(new Port(this))
+    , port_(new Port(this))
     , dtr(dtr)
     , dts(dts)
     , policy(policy)
 {
-    m_port->moveToThread(&m_portThread);
-    connect(&m_portThread, &QThread::finished, m_port, &QObject::deleteLater);
-    connect(this, &Device::open, m_port, &Port::Open);
-    connect(this, &Device::close, m_port, &Port::Close);
-    connect(this, &Device::writeParcel, m_port, &Port::Write);
-    connect(m_port, &Port::message, this, &Device::message);
-    m_portThread.start(QThread::InheritPriority);
+    port_->moveToThread(&portThread_);
+    connect(&portThread_, &QThread::finished, port_, &QObject::deleteLater);
+    connect(this, &Device::open, port_, &Port::Open);
+    connect(this, &Device::close, port_, &Port::Close);
+    connect(this, &Device::writeParcel, port_, &Port::Write);
+    connect(port_, &Port::message, this, &Device::message);
+    portThread_.start(QThread::InheritPriority);
 }
 
 Device::~Device()
 {
-    m_portThread.quit();
-    m_portThread.wait();
+    portThread_.quit();
+    portThread_.wait();
 }
 
 bool Device::ping(const QString& portName, int baud, int addr)
@@ -34,24 +34,24 @@ bool Device::ping(const QString& portName, int baud, int addr)
     return connected_;
 #endif
 
-    m_semaphore.acquire(m_semaphore.available());
+    semaphore_.acquire(semaphore_.available());
     do {
         emit close();
-        if (!m_semaphore.tryAcquire(1, 1000)) // ждём закрытия порта
+        if (!semaphore_.tryAcquire(1, 1000)) // ждём закрытия порта
             break;
 
         if (!portName.isEmpty())
-            m_port->setPortName(portName);
+            port_->setPortName(portName);
         if (baud != 0)
-            m_port->setBaudRate(baud);
+            port_->setBaudRate(baud);
 
         if (policy == PortPolicy::AlwaysOpen) {
             emit open(QIODevice::ReadWrite);
-            if (!m_semaphore.tryAcquire(1, 1000) && m_port->isOpen())
+            if (!semaphore_.tryAcquire(1, 1000) && port_->isOpen())
                 break;
-            m_port->setDataTerminalReady(dtr == DTR::On);
-            m_port->setRequestToSend(dts == DTS::On);
-            m_portThread.msleep(50);
+            port_->setDataTerminalReady(dtr == DTR::On);
+            port_->setRequestToSend(dts == DTS::On);
+            portThread_.msleep(50);
         }
 
         if (getType(addr) != type()) {
@@ -91,21 +91,21 @@ bool Device::success()
 
 bool Device::checkParcel()
 {
-    if (int index = m_answerData.indexOf('!'); index > 0)
-        m_answerData.remove(0, index);
+    if (int index = rcData_.indexOf('!'); index > 0)
+        rcData_.remove(0, index);
 
-    if (int index = m_answerData.lastIndexOf('\r'); index > 0)
-        m_answerData.resize(index);
+    if (int index = rcData_.lastIndexOf('\r'); index > 0)
+        rcData_.resize(index);
 
-    if (int index = m_answerData.lastIndexOf(';') + 1;
-        index > 0 && calcCrc(m_answerData.left(index), 1).toUInt() == m_answerData.right(m_answerData.length() - index).toUInt()) {
+    if (int index = rcData_.lastIndexOf(';') + 1;
+        index > 0 && calcCrc(rcData_.left(index), 1).toUInt() == rcData_.right(rcData_.length() - index).toUInt()) {
         m_data.clear();
         index = 0;
         int lastIndex;
         do {
-            index = m_answerData.indexOf(';', index + 1);
-            m_data.empty() ? m_data.emplace_back(m_answerData.data() + 1, index - 1)
-                           : m_data.emplace_back(m_answerData.data() + lastIndex, index - lastIndex);
+            index = rcData_.indexOf(';', index + 1);
+            m_data.empty() ? m_data.emplace_back(rcData_.data() + 1, index - 1)
+                           : m_data.emplace_back(rcData_.data() + lastIndex, index - lastIndex);
             lastIndex = index + 1;
         } while (index > -1);
         return true;
@@ -116,7 +116,7 @@ bool Device::checkParcel()
 
 bool Device::wait(int timeout)
 {
-    if (connected_ && m_semaphore.tryAcquire(1, timeout)) {
+    if (connected_ && semaphore_.tryAcquire(1, timeout)) {
         if (checkParcel())
             return true;
         else
@@ -145,7 +145,7 @@ QByteArray Device::calcCrc(const QByteArray& parcel, size_t offset)
     return QByteArray::number(crc.crc16);
 }
 
-Port* Device::port() const { return m_port; }
+Port* Device::port() const { return port_; }
 
 uint8_t Device::address() const { return m_address; }
 
@@ -163,7 +163,7 @@ bool Device::setBaudRate(Baud baudRate)
     PortOpener po(policy == PortPolicy::CloseAfterRaad ? this : nullptr);
     bool success = isConnected() && write<Cmd::SetBaudRate>(baudRate) == RetCcode::Ok;
     if (success)
-        m_port->setBaudRate(stdBauds[baudRate]);
+        port_->setBaudRate(stdBauds[baudRate]);
     return success;
 }
 

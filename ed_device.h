@@ -176,13 +176,13 @@ protected:
     bool wait(int timeout = 3000);
     static inline QSemaphore waitAllSemaphore;
 
-    Port* m_port;
-    QByteArray m_answerData;
+    Port* port_;
+    QByteArray rcData_;
     std::vector<Span> m_data;
 
     QMutex m_mutex;
-    QSemaphore m_semaphore;
-    QThread m_portThread;
+    QSemaphore semaphore_;
+    QThread portThread_;
 
     int m_lastRetCode{};
 
