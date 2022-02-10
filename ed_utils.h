@@ -21,7 +21,8 @@ concept hex_convertible = requires {
     requires std::is_arithmetic_v<T> || std::is_enum_v<T> || std::is_pod_v<T> || std::is_trivial_v<T>;
 };
 
-/// добавление убирания разделителя из формируемой посылки
+///////////////////////////////////////////
+/// убирание разделителя из формируемой посылки
 struct SkipSemicolon {
 };
 
@@ -35,11 +36,11 @@ struct Span {
     span data;
 
     Span(span s) noexcept
-        : data{s} {
+        : data { s } {
     }
 
     Span(char* ptr, size_t size) noexcept
-        : data{ptr, size} {
+        : data { ptr, size } {
     }
 
     Span mid(size_t pos, size_t len = std::dynamic_extent) noexcept {
@@ -49,7 +50,7 @@ struct Span {
         return data[0] == c;
     }
     operator QByteArray() const noexcept {
-        return {data.data(), static_cast<int>(data.size())};
+        return { data.data(), static_cast<int>(data.size()) };
     }
     size_t size() noexcept {
         return data.size();
@@ -59,9 +60,9 @@ struct Span {
     template <class T>
     auto to(bool* ok = nullptr) const noexcept
         requires(std::is_integral_v<std::decay_t<T>> || std::is_enum_v<std::decay_t<T>>) {
-        T result{};
+        T result {};
         auto [ptr, errCode] = std::from_chars(data.data(), data.data() + data.size(), result /*, 10*/);
-        if(ok)
+        if (ok)
             *ok = (errCode == std::errc());
         return result;
     }
@@ -71,9 +72,9 @@ struct Span {
     template <class T>
     auto to(bool* ok = nullptr) const noexcept
         requires std::is_floating_point_v<std::decay_t<T>> {
-        T result{};
+        T result {};
         auto [ptr, errCode] = std::from_chars(data.data(), data.data() + data.size(), result /*, std::chars_format::general*/);
-        if(ok)
+        if (ok)
             *ok = (errCode == std::errc());
         return result;
     }
@@ -108,7 +109,7 @@ struct ToHex {
 
     template <typename T>
     static auto toHex(T) requires std::is_same_v<std::decay_t<T>, Semicolon> {
-        return QByteArray{";"};
+        return QByteArray { ";" };
     }
 };
 
@@ -122,7 +123,7 @@ struct FromHex {
     operator T&() noexcept { return val; }
 
     auto operator=(const Span& arr) requires(hex_convertible<T>&& std::is_array_v<T>) {
-        auto data{QByteArray::fromHex(arr)};
+        auto data { QByteArray::fromHex(arr) };
         std::memcpy(val, data.data(), data.size());
         return (*this);
     }
@@ -180,9 +181,9 @@ struct Parcel {
     // integral
     template <typename T>
     void func(T arg) requires std::is_integral_v<std::decay_t<T>> {
-        std::array<char, 16> str{0};
+        std::array<char, 16> str { 0 };
         auto [ptr, ec] = std::to_chars(str.data(), str.data() + str.size(), arg);
-        if(!(ec == std::errc{}))
+        if (!(ec == std::errc {}))
             qDebug() << static_cast<int>(ec);
         *ptr = ';';
         data.append(str.data());
@@ -191,9 +192,9 @@ struct Parcel {
     // enum
     template <typename T>
     void func(T arg) requires std::is_enum_v<std::decay_t<T>> {
-        std::array<char, 16> str{0};
+        std::array<char, 16> str { 0 };
         auto [ptr, ec] = std::to_chars(str.data(), str.data() + str.size(), static_cast<long>(arg));
-        if(!(ec == std::errc{}))
+        if (!(ec == std::errc {}))
             qDebug() << static_cast<int>(ec);
         *ptr = ';';
         data.append(str.data());
@@ -202,9 +203,9 @@ struct Parcel {
     // floating point
     template <typename T>
     void func(T arg) requires std::is_floating_point_v<std::decay_t<T>> {
-        std::array<char, 16> str{0};
+        std::array<char, 16> str { 0 };
         auto [ptr, ec] = std::to_chars(str.data(), str.data() + str.size(), arg, std::chars_format::fixed, 5);
-        if(!(ec == std::errc{}))
+        if (!(ec == std::errc {}))
             qDebug() << static_cast<int>(ec);
         *ptr = ';';
         data.append(str.data());
